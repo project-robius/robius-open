@@ -1,17 +1,18 @@
-use jni::{objects::JValueGen, JNIEnv};
+use jni::{
+    objects::{JClass, JValueGen},
+    JNIEnv,
+};
 
-pub(crate) struct Uri<'a, 'b, 'c> {
+pub(crate) struct Uri<'a, 'b> {
     inner: &'a str,
     action: &'b str,
-    env: JNIEnv<'c>,
 }
 
-impl<'a, 'b, 'c> Uri<'a, 'b, 'c> {
-    pub(crate) fn new(inner: &'a str, temp: JNIEnv<'c>) -> Self {
+impl<'a, 'b> Uri<'a, 'b> {
+    pub(crate) fn new(inner: &'a str) -> Self {
         Self {
             inner,
             action: "ACTION_VIEW",
-            env: temp,
         }
     }
 
@@ -20,7 +21,8 @@ impl<'a, 'b, 'c> Uri<'a, 'b, 'c> {
     }
 
     pub(crate) fn open(self) {
-        let mut env = self.env;
+        let mut env: JNIEnv = todo!();
+        let context: JClass = todo!();
 
         let action = env
             .get_static_field("android/content/Intent", self.action, "Ljava/lang/String;")
@@ -48,14 +50,15 @@ impl<'a, 'b, 'c> Uri<'a, 'b, 'c> {
             )
             .unwrap();
 
-        env.call_static_method(
-            "android/app/Activity",
+        let activity = env.new_object("android/app/Activity", "()V", &[]).unwrap();
+
+        env.call_method(
+            // activity,
+            context,
             "startActivity",
             "(Landroid/content/Intent;)V",
             &[JValueGen::Object(&intent)],
         )
         .unwrap();
-
-        println!("ok");
     }
 }

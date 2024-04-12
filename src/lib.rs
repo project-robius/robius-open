@@ -1,20 +1,14 @@
-use jni::{
-    objects::{JClass, JObject},
-    JNIEnv,
-};
-
 mod sys;
 
 pub struct Uri<'a, 'b> {
-    inner: sys::Uri<'a, 'b, 'static>,
+    inner: sys::Uri<'a, 'b>,
 }
 
 impl<'a, 'b> Uri<'a, 'b> {
     pub fn new(s: &'a str) -> Self {
-        // Self {
-        // inner: sys::Uri::new(s),
-        // }
-        todo!();
+        Self {
+            inner: sys::Uri::new(s),
+        }
     }
 
     pub fn action(self, action: &'b str) -> Self {
@@ -28,23 +22,4 @@ impl<'a, 'b> Uri<'a, 'b> {
     }
 
     // TODO: Callback.
-}
-
-#[no_mangle]
-extern "C" fn rust_auth() {
-    let uri = Uri::new("https://google.com");
-    uri.open();
-    let uri = Uri::new("etalrouhoaeu:huaeorckjqk");
-    uri.open();
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn Java_com_example_myapplication2_Test_greeting<'a>(
-    env: JNIEnv<'a>,
-    _: JClass<'a>,
-) {
-    android_logger::init_once(
-        android_logger::Config::default().with_max_level(log::LevelFilter::Error),
-    );
-    sys::Uri::new("https://google.com", env).open();
 }
