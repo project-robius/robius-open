@@ -1,7 +1,5 @@
-use jni::{
-    objects::{JClass, JValueGen},
-    JNIEnv,
-};
+use jni::objects::JValueGen;
+use robius_android_env::{current_activity, vm};
 
 pub(crate) struct Uri<'a, 'b> {
     inner: &'a str,
@@ -21,8 +19,8 @@ impl<'a, 'b> Uri<'a, 'b> {
     }
 
     pub(crate) fn open(self) {
-        let mut env: JNIEnv = todo!();
-        let context: JClass = todo!();
+        let mut env = vm().unwrap().get_env().unwrap();
+        let current_activity = current_activity().unwrap();
 
         let action = env
             .get_static_field("android/content/Intent", self.action, "Ljava/lang/String;")
@@ -50,11 +48,8 @@ impl<'a, 'b> Uri<'a, 'b> {
             )
             .unwrap();
 
-        let activity = env.new_object("android/app/Activity", "()V", &[]).unwrap();
-
         env.call_method(
-            // activity,
-            context,
+            current_activity,
             "startActivity",
             "(Landroid/content/Intent;)V",
             &[JValueGen::Object(&intent)],
