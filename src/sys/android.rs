@@ -18,7 +18,7 @@ impl<'a, 'b> Uri<'a, 'b> {
         Self { action, ..self }
     }
 
-    pub(crate) fn open(self) {
+    pub(crate) fn open(self) -> Result<(), ()> {
         let mut env = vm().unwrap().get_env().unwrap();
         let current_activity = current_activity().unwrap();
 
@@ -48,12 +48,41 @@ impl<'a, 'b> Uri<'a, 'b> {
             )
             .unwrap();
 
-        env.call_method(
-            current_activity,
-            "startActivity",
-            "(Landroid/content/Intent;)V",
-            &[JValueGen::Object(&intent)],
-        )
-        .unwrap();
+        let package_manager = env
+            .call_method(
+                current_activity,
+                "getPackageManager",
+                "()Landroid/content/pm/PackageManager;",
+                &[],
+            )
+            .unwrap()
+            .l()
+            .unwrap();
+
+        let component_name = env
+            .call_method(
+                &intent,
+                "resolveActivity",
+                "(Landroid/content/pm/PackageManager;)Landroid/content/ComponentName;",
+                &[JValueGen::Object(&package_manager)],
+            )
+            .unwrap()
+            .l()
+            .unwrap();
+
+        // TODO: This doesn't work for some reason
+        // if component_name.as_raw().is_null() {
+        if false {
+            Err(())
+        } else {
+            env.call_method(
+                current_activity,
+                "startActivity",
+                "(Landroid/content/Intent;)V",
+                &[JValueGen::Object(&intent)],
+            )
+            .unwrap();
+            Ok(())
+        }
     }
 }

@@ -2,8 +2,11 @@
 //!
 //! ```
 //! # use robius_open::Uri;
-//! Uri::new("tel:+61 123 456 789").open();
+//! Uri::new("tel:+61 123 456 789")
+//!     .open()
+//!     .expect("failed to open telephone URI");
 //! ```
+#![allow(clippy::result_unit_err)]
 
 mod sys;
 
@@ -29,7 +32,10 @@ impl<'a, 'b> Uri<'a, 'b> {
     ///
     /// ```
     /// # use robius_open::Uri;
-    /// Uri::new("tel:+61 123 456 789").action("ACTION_DIAL").open();
+    /// Uri::new("tel:+61 123 456 789")
+    ///     .action("ACTION_DIAL")
+    ///     .open()
+    ///     .expect("failed to open telephone URI");
     /// ```
     ///
     /// [aa]: https://developer.android.com/reference/android/content/Intent#standard-activity-actions
@@ -40,9 +46,7 @@ impl<'a, 'b> Uri<'a, 'b> {
     }
 
     /// Opens the URI.
-    pub fn open(self) {
-        self.inner.open();
+    pub fn open(self) -> Result<(), ()> {
+        self.inner.open()
     }
-
-    // TODO: Callback.
 }

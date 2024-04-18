@@ -22,10 +22,14 @@ impl<'a, 'b> Uri<'a, 'b> {
         self
     }
 
-    pub fn open(self) {
+    pub fn open(self) -> Result<(), ()> {
         let string = NSString::from_str(self.inner);
-        let url = unsafe { NSURL::URLWithString(&string) }.unwrap();
+        let url = unsafe { NSURL::URLWithString(&string) }.ok_or(())?;
         let workspace = unsafe { NSWorkspace::sharedWorkspace() };
-        unsafe { workspace.openURL(&url) };
+        if unsafe { workspace.openURL(&url) } {
+            Ok(())
+        } else {
+            Err(())
+        }
     }
 }

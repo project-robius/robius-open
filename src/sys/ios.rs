@@ -28,14 +28,23 @@ impl<'a, 'b> Uri<'a, 'b> {
         self
     }
 
-    pub fn open(self) {
+    pub fn open(self) -> Result<(), ()> {
         let string = NSString::from_str(self.inner);
         let url = unsafe { NSURL::URLWithString(&string) }.unwrap();
 
         let application = unsafe { UIApplication::shared() };
-        // TODO: Oneshot channels to communicate success.
-        let block = ConcreteBlock::new(|_| {}).copy();
+        let (tx, rx) = std::sync::mpsc::channel();
+        let block = ConcreteBlock::new(move |success| {
+            tx.send(success).expect("failed to send open result");
+        })
+        .copy();
+
         application.open(&url, &NSDictionary::new(), &*block);
+
+        match rx.recv() {
+            Ok(success) if success.is_true() => Ok(()),
+            _ => Err(()),
+        }
     }
 }
 

@@ -19,12 +19,13 @@ impl<'a> Uri<'a> {
         self
     }
 
-    pub fn open(self) -> bool {
+    pub fn open(self) -> Result<(), ()> {
         // TODO: Test.
         if let Ok(status) = Command::new("xdg-open").arg(self.inner).status() {
-            status.success()
-        } else {
-            false
+            if status.success() {
+                return Ok(());
+            }
         }
+        Err(())
     }
 }

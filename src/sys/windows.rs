@@ -24,9 +24,10 @@ impl<'a> Uri<'a> {
     pub fn open(self) -> bool {
         // TODO: Test.
         if let Ok(status) = Command::new("start").arg(self.inner).status() {
-            status.success()
-        } else {
-            false
+            if status.success() {
+                return Ok(());
+            }
         }
+        Err(())
     }
 }
