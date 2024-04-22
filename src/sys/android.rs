@@ -70,9 +70,11 @@ impl<'a, 'b> Uri<'a, 'b> {
             .l()
             .unwrap();
 
-        // TODO: This doesn't work for some reason
-        // if component_name.as_raw().is_null() {
-        if false {
+        if component_name.as_raw().is_null() {
+            // NOTE: If the correct permissions aren't added to the app manifest,
+            // resolveActivity will return null regardless.
+            //
+            // if false {
             Err(())
         } else {
             env.call_method(
