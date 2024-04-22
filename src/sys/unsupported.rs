@@ -1,21 +1,21 @@
 use std::marker::PhantomData;
 
-use crate::Action;
-
 pub(crate) struct Uri<'a, 'b> {
     phantom: PhantomData<(&'a (), &'b ())>,
 }
 
-impl<'a> Uri<'a> {
+impl<'a, 'b> Uri<'a, 'b> {
     pub(crate) fn new(_: &'a str) -> Self {
         Self {
             phantom: PhantomData,
         }
     }
 
-    pub fn action(self, _: Action) -> Self {
+    pub fn action(self, _: &'b str) -> Self {
         self
     }
 
-    pub fn open(self) {}
+    pub fn open(self) -> Result<(), ()> {
+        Err(())
+    }
 }
