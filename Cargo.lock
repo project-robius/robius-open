@@ -136,7 +136,7 @@ dependencies = [
 [[package]]
 name = "robius-android-env"
 version = "0.1.0"
-source = "git+https://github.com/project-robius/robius-android-env#2444b9d9b430ae365e012e94b005444c48db8ae0"
+source = "git+https://github.com/project-robius/robius-android-env#45acdf70ebc507a2ac017add07bec9ecd7bafa51"
 dependencies = [
  "jni",
 ]
@@ -148,6 +148,7 @@ dependencies = [
  "cfg-if",
  "icrate",
  "jni",
+ "log",
  "objc2",
  "robius-android-env",
 ]

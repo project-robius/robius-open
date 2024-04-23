@@ -3,12 +3,10 @@ name = "robius-open"
 version = "0.1.0"
 edition = "2021"
 
-[features]
-default = ["android-result"]
-android-result = []
 
 [dependencies]
 cfg-if = "1.0.0"
+log = { version = "0.4.21", optional = true }
 
 [target.'cfg(target_os = "android")'.dependencies.jni]
 version = "0.21.1"
@@ -27,3 +25,8 @@ version = "0.5.0"
 [target.'cfg(target_os = "macos")'.dependencies.icrate]
 version = "0.1.0"
 features = ["AppKit", "AppKit_NSWorkspace", "Foundation", "Foundation_NSString", "Foundation_NSURL"]
+
+[features]
+default = ["android-result"]
+android-result = []
+log = ["dep:log"]
