@@ -48,33 +48,38 @@ impl<'a, 'b> Uri<'a, 'b> {
             )
             .unwrap();
 
-        let package_manager = env
-            .call_method(
-                current_activity,
-                "getPackageManager",
-                "()Landroid/content/pm/PackageManager;",
-                &[],
-            )
-            .unwrap()
-            .l()
-            .unwrap();
+        #[cfg(feature = "android-result")]
+        let is_err = {
+            let package_manager = env
+                .call_method(
+                    current_activity,
+                    "getPackageManager",
+                    "()Landroid/content/pm/PackageManager;",
+                    &[],
+                )
+                .unwrap()
+                .l()
+                .unwrap();
 
-        let component_name = env
-            .call_method(
-                &intent,
-                "resolveActivity",
-                "(Landroid/content/pm/PackageManager;)Landroid/content/ComponentName;",
-                &[JValueGen::Object(&package_manager)],
-            )
-            .unwrap()
-            .l()
-            .unwrap();
+            let component_name = env
+                .call_method(
+                    &intent,
+                    "resolveActivity",
+                    "(Landroid/content/pm/PackageManager;)Landroid/content/ComponentName;",
+                    &[JValueGen::Object(&package_manager)],
+                )
+                .unwrap()
+                .l()
+                .unwrap();
 
-        if component_name.as_raw().is_null() {
+            component_name.as_raw().is_null()
+        };
+        #[cfg(not(feature = "android_result"))]
+        let is_err = false;
+
+        if is_err {
             // NOTE: If the correct permissions aren't added to the app manifest,
             // resolveActivity will return null regardless.
-            //
-            // if false {
             Err(())
         } else {
             env.call_method(

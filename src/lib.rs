@@ -6,6 +6,28 @@
 //!     .open()
 //!     .expect("failed to open telephone URI");
 //! ```
+//!
+//! Supports:
+//! - macOS (`NSWorkspace`)
+//! - Android (`android/content/Intent`)
+//! - Linux (`xdg-open`)
+//! - Windows (`start`)
+//! - WIP: iOS (`UIApplication`)
+//!
+//! # Android
+//! To use the library on Android, you must add the following to the app
+//! manifest: ```xml
+//! <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
+//!     tools:ignore="QueryAllPackagesPermission" />
+//!
+//! <queries>
+//!     <intent>
+//!         <action android:name="android.intent.action.MAIN" />
+//!     </intent>
+//! </queries>
+//! ```
+//! or alternatively, disable the `android-result` feature. However, disabling this feature will
+//! make [`Uri::open`] always return `Ok`, regardless of whether the URI was successfully opened.
 #![allow(clippy::result_unit_err)]
 
 mod sys;

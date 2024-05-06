@@ -3,9 +3,12 @@ name = "robius-open"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = ["android-result"]
+android-result = []
+
 [dependencies]
 cfg-if = "1.0.0"
-log = "*"
 
 [target.'cfg(target_os = "android")'.dependencies.jni]
 version = "0.21.1"
