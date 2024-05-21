@@ -16,7 +16,8 @@
 //!
 //! # Android
 //! To use the library on Android, you must add the following to the app
-//! manifest: ```xml
+//! manifest:
+//! ```xml
 //! <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
 //!     tools:ignore="QueryAllPackagesPermission" />
 //!
@@ -26,11 +27,15 @@
 //!     </intent>
 //! </queries>
 //! ```
-//! or alternatively, disable the `android-result` feature. However, disabling this feature will
-//! make [`Uri::open`] always return `Ok`, regardless of whether the URI was successfully opened.
+//! or alternatively, disable the `android-result` feature. However, disabling
+//! this feature will make [`Uri::open`] always return `Ok`, regardless of
+//! whether the URI was successfully opened.
 #![allow(clippy::result_unit_err)]
 
+mod error;
 mod sys;
+
+pub use error::{Error, Result};
 
 /// A uniform resource identifier.
 pub struct Uri<'a, 'b> {
@@ -68,7 +73,7 @@ impl<'a, 'b> Uri<'a, 'b> {
     }
 
     /// Opens the URI.
-    pub fn open(self) -> Result<(), ()> {
+    pub fn open(self) -> Result<()> {
         self.inner.open()
     }
 }

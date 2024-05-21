@@ -3,7 +3,6 @@ name = "robius-open"
 version = "0.1.0"
 edition = "2021"
 
-
 [dependencies]
 cfg-if = "1.0.0"
 log = { version = "0.4.21", optional = true }

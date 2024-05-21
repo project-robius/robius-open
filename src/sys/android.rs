@@ -1,5 +1,7 @@
 use jni::objects::JValueGen;
 
+use crate::{Error, Result};
+
 pub(crate) struct Uri<'a, 'b> {
     inner: &'a str,
     action: &'b str,
@@ -17,33 +19,29 @@ impl<'a, 'b> Uri<'a, 'b> {
         Self { action, ..self }
     }
 
-    pub(crate) fn open(self) -> Result<(), ()> {
+    pub(crate) fn open(self) -> Result<()> {
         let res = robius_android_env::with_activity(|env, current_activity| {
             let action = env
-                .get_static_field("android/content/Intent", self.action, "Ljava/lang/String;")
-                .unwrap()
-                .l()
-                .unwrap();
+                .get_static_field("android/content/Intent", self.action, "Ljava/lang/String;")?
+                .l()?;
 
-            let string = env.new_string(self.inner).unwrap();
+            let string = env
+                .new_string(self.inner)
+                .map_err(|_| Error::MalformedUri)?;
             let uri = env
                 .call_static_method(
                     "android/net/Uri",
                     "parse",
                     "(Ljava/lang/String;)Landroid/net/Uri;",
                     &[JValueGen::Object(&string)],
-                )
-                .unwrap()
-                .l()
-                .unwrap();
+                )?
+                .l()?;
 
-            let intent = env
-                .new_object(
-                    "android/content/Intent",
-                    "(Ljava/lang/String;Landroid/net/Uri;)V",
-                    &[JValueGen::Object(&action), JValueGen::Object(&uri)],
-                )
-                .unwrap();
+            let intent = env.new_object(
+                "android/content/Intent",
+                "(Ljava/lang/String;Landroid/net/Uri;)V",
+                &[JValueGen::Object(&action), JValueGen::Object(&uri)],
+            )?;
 
             #[cfg(feature = "android-result")]
             let is_err = {
@@ -53,10 +51,8 @@ impl<'a, 'b> Uri<'a, 'b> {
                         "getPackageManager",
                         "()Landroid/content/pm/PackageManager;",
                         &[],
-                    )
-                    .unwrap()
-                    .l()
-                    .unwrap();
+                    )?
+                    .l()?;
 
                 let component_name = env
                     .call_method(
@@ -64,10 +60,8 @@ impl<'a, 'b> Uri<'a, 'b> {
                         "resolveActivity",
                         "(Landroid/content/pm/PackageManager;)Landroid/content/ComponentName;",
                         &[JValueGen::Object(&package_manager)],
-                    )
-                    .unwrap()
-                    .l()
-                    .unwrap();
+                    )?
+                    .l()?;
 
                 component_name.as_raw().is_null()
             };
@@ -77,29 +71,26 @@ impl<'a, 'b> Uri<'a, 'b> {
             if is_err {
                 // NOTE: If the correct permissions aren't added to the app manifest,
                 // resolveActivity will return null regardless.
-                Err(())
+                Err(Error::NoHandler)
             } else {
                 env.call_method(
                     current_activity,
                     "startActivity",
                     "(Landroid/content/Intent;)V",
                     &[JValueGen::Object(&intent)],
-                )
-                .unwrap();
+                )?;
                 Ok(())
             }
         });
 
         match res {
             Some(Ok(())) => Ok(()),
-            Some(Err(_)) => {
+            Some(Err(e)) => {
                 #[cfg(feature = "log")]
                 log::error!(
                     "resolveActivity method failed. Is your app manifest missing permissions?"
                 );
-                // TODO: add error enum: the resolveActivity method failed,
-                //       which implies the app manifest is missing permissions.
-                Err(())
+                Err(e)
             }
             None => {
                 #[cfg(feature = "log")]
@@ -108,8 +99,7 @@ impl<'a, 'b> Uri<'a, 'b> {
                      `robius_android_env::set_vm()` and \
                      `robius_android_env::set_activity_getter()`?"
                 );
-                // TODO: add error enum: couldn't get current activity or JVM/JNI
-                Err(())
+                Err(Error::AndroidEnvironment)
             }
         }
     }

@@ -5,6 +5,8 @@ use icrate::{
     Foundation::{NSString, NSURL},
 };
 
+use crate::{Error, Result};
+
 pub(crate) struct Uri<'a, 'b> {
     inner: &'a str,
     phantom: PhantomData<&'b ()>,
@@ -22,14 +24,15 @@ impl<'a, 'b> Uri<'a, 'b> {
         self
     }
 
-    pub fn open(self) -> Result<(), ()> {
+    pub fn open(self) -> Result<()> {
         let string = NSString::from_str(self.inner);
-        let url = unsafe { NSURL::URLWithString(&string) }.ok_or(())?;
+        let url = unsafe { NSURL::URLWithString(&string) }.ok_or(Error::MalformedUri)?;
         let workspace = unsafe { NSWorkspace::sharedWorkspace() };
+
         if unsafe { workspace.openURL(&url) } {
             Ok(())
         } else {
-            Err(())
+            Err(Error::Unknown)
         }
     }
 }

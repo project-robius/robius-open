@@ -11,6 +11,8 @@ use objc2::{
     ClassType,
 };
 
+use crate::{Error, Result};
+
 pub(crate) struct Uri<'a, 'b> {
     inner: &'a str,
     phantom: PhantomData<&'b ()>,
@@ -28,22 +30,24 @@ impl<'a, 'b> Uri<'a, 'b> {
         self
     }
 
-    pub fn open(self) -> Result<(), ()> {
+    pub fn open(self) -> Result<()> {
         let string = NSString::from_str(self.inner);
-        let url = unsafe { NSURL::URLWithString(&string) }.unwrap();
+        let url = unsafe { NSURL::URLWithString(&string) }.ok_or(Error::MalformedUri)?;
 
         let application = unsafe { UIApplication::shared() };
         let (tx, rx) = std::sync::mpsc::channel();
         let block = ConcreteBlock::new(move |success| {
+            // NOTE: We want to panic here as the main thread will hang waiting for a
+            // message on the channel.
             tx.send(success).expect("failed to send open result");
         })
         .copy();
 
-        application.open(&url, &NSDictionary::new(), &*block);
+        application.open(&url, &NSDictionary::new(), &block);
 
         match rx.recv() {
             Ok(success) if success.is_true() => Ok(()),
-            _ => Err(()),
+            _ => Err(Error::Unknown),
         }
     }
 }
