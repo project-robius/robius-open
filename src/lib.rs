@@ -12,7 +12,7 @@
 //! - Android (`android/content/Intent`)
 //! - Linux (`xdg-open`)
 //! - Windows (`start`)
-//! - WIP: iOS (`UIApplication`)
+//! - iOS (`UIApplication`)
 //!
 //! # Android
 //! To use the library on Android, you must add the following to the app
