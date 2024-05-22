@@ -1,7 +1,7 @@
 # `robius-open`
 
-[![Latest Version](https://img.shields.io/crates/v/robius_open.svg)](https://crates.io/crates/robius_open)
-[![Docs](https://docs.rs/robius_open/badge.svg)](https://docs.rs/robius_open/latest/robius_open/)
+[![Latest Version](https://img.shields.io/crates/v/robius-open.svg)](https://crates.io/crates/robius_open)
+[![Docs](https://docs.rs/robius-open/badge.svg)](https://docs.rs/robius-open/latest/robius_open/)
 [![Project Robius Matrix Chat](https://img.shields.io/matrix/robius-general%3Amatrix.org?server_fqdn=matrix.org&style=flat&logo=matrix&label=Project%20Robius%20Matrix%20Chat&color=B7410E)](https://matrix.to/#/#robius:matrix.org)
 
 This crate provides easy Rust interfaces to open URIs across multiple platforms, including:
