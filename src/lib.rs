@@ -1,4 +1,4 @@
-//! A crate for opening files.
+//! A crate for opening URIs, e.g., URLs, `tel:`, `mailto:`, `file://`, etc.
 //!
 //! ```
 //! # use robius_open::Uri;
