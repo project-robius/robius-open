@@ -1,8 +1,12 @@
-// TODO: Launcher.LaunchUriAsync
+use std::marker::PhantomData;
+use crate::{Result, Error};
 
-use std::{marker::PhantomData, process::Command};
+use windows::{
+    core::HSTRING,
+    Foundation,
+    System::Launcher,
+};
 
-use crate::{Error, Result};
 
 pub(crate) struct Uri<'a, 'b> {
     inner: &'a str,
@@ -22,12 +26,16 @@ impl<'a, 'b> Uri<'a, 'b> {
     }
 
     pub fn open(self) -> Result<()> {
-        // TODO: Test.
-        if let Ok(status) = Command::new("start").arg(self.inner).status() {
-            if status.success() {
-                return Ok(());
-            }
+        let win_uri = Foundation::Uri::CreateUri(&HSTRING::from(self.inner))
+            .map_err(|_| Error::MalformedUri)?;
+
+        match Launcher::LaunchUriAsync(&win_uri)
+            .map_err(|_| crate::Error::Unknown)?
+            .get()
+        {
+            Ok(true) => Ok(()),
+            Ok(false) => Err(Error::NoHandler),
+            Err(_) => Err(Error::Unknown)
         }
-        Err(Error::Unknown)
     }
 }
