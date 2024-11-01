@@ -84,20 +84,18 @@ impl<'a, 'b> Uri<'a, 'b> {
         });
 
         match res {
-            Some(Ok(())) => Ok(()),
-            Some(Err(e)) => {
+            Ok(Ok(())) => Ok(()),
+            Ok(Err(e)) => {
                 #[cfg(feature = "log")]
                 log::error!(
                     "resolveActivity method failed. Is your app manifest missing permissions?"
                 );
                 Err(e)
             }
-            None => {
+            Err(_e) => {
                 #[cfg(feature = "log")]
                 log::error!(
-                    "couldn't get current activity or JVM/JNI. Did you call \
-                     `robius_android_env::set_vm()` and \
-                     `robius_android_env::set_activity_getter()`?"
+                    "Couldn't get current activity or JVM/JNI. Did you set up `robius_android_env` correctly?"
                 );
                 Err(Error::AndroidEnvironment)
             }
