@@ -1,9 +1,7 @@
 use std::marker::PhantomData;
 
-use icrate::{
-    AppKit::NSWorkspace,
-    Foundation::{NSString, NSURL},
-};
+use objc2_app_kit::NSWorkspace;
+use objc2_foundation::{NSString, NSURL};
 
 use crate::{Error, Result};
 
