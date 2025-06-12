@@ -1,10 +1,9 @@
 use std::marker::PhantomData;
 
-use block2::{Block, StackBlock};
-use objc2_foundation::{NSObjectProtocol, NSDictionary, NSString, NSURL};
-use objc2::{
-    extern_class, extern_conformance, extern_methods, rc::Retained, runtime::{AnyObject, Bool, NSObject}
-};
+use block2::RcBlock;
+use objc2_foundation::{NSDictionary, NSString, NSURL};
+use objc2::{MainThreadMarker, runtime::Bool};
+use objc2_ui_kit::UIApplication;
 
 use crate::{Error, Result};
 
@@ -28,10 +27,11 @@ impl<'a, 'b> Uri<'a, 'b> {
     pub fn open(self) -> Result<()> {
         let string = NSString::from_str(self.inner);
         let url = unsafe { NSURL::URLWithString(&string) }.ok_or(Error::MalformedUri)?;
+        let mtm = MainThreadMarker::new().ok_or(Error::NotMainThread)?;
+        let application = UIApplication::sharedApplication(mtm);
 
-        let application = UIApplication::shared();
         let (tx, rx) = std::sync::mpsc::channel();
-        let block = StackBlock::new(move |success: Bool| {
+        let block = RcBlock::new(move |success: Bool| {
             // TODO: this closure block never fires.
             #[cfg(feature = "log")]
             log::error!("open completionHandler called with success: {}", success.as_raw());
@@ -42,13 +42,18 @@ impl<'a, 'b> Uri<'a, 'b> {
 
             #[cfg(feature = "log")]
             log::error!("open completionHandler is done, sent tx.send(success) successfully");
-            0usize
-        })
-        .copy();
+        });
 
         #[cfg(feature = "log")]
         log::error!("Calling application.open()");
-        application.open(&url, &NSDictionary::new(), &block);
+
+        unsafe {
+            application.openURL_options_completionHandler(
+                &url,
+                &NSDictionary::new(), // no options used currently.
+                Some(&block),
+            );
+        }
         #[cfg(feature = "log")]
         log::error!("After application.open(), waiting on rx.recv()");
 
@@ -63,42 +68,4 @@ impl<'a, 'b> Uri<'a, 'b> {
         log::error!("After rx.recv(), got {res:?}");
         res
     }
-}
-
-extern_class!(
-    #[unsafe(super(NSObject))]
-    struct UIResponder;
-);
-
-extern_class!(
-    #[unsafe(super(UIResponder))]
-    struct UIApplication;
-);
-
-// not sure if these are needed
-extern_conformance!(unsafe impl NSObjectProtocol for UIResponder {});
-// extern_conformance!(unsafe impl NSCopying for UIResponder {});
-// extern_conformance!(unsafe impl NSCoding for UIResponder {});
-
-extern_conformance!(unsafe impl NSObjectProtocol for UIApplication {});
-
-
-impl UIApplication {
-    extern_methods!(
-        #[unsafe(method(sharedApplication))]
-        pub fn shared() -> Retained<UIApplication>;
-
-        #[unsafe(method(canOpenURL:))]
-        fn can_open(&self, url: &NSURL) -> bool;
-
-        #[unsafe(method(openURL:options:completionHandler:))]
-        fn open(
-            &self,
-            url: &NSURL,
-            // TODO?
-            options: &NSDictionary<NSString, AnyObject>,
-            // TODO?
-            completion_handler: &Block<dyn Fn(Bool) -> usize>,
-        );
-    );
 }

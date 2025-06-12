@@ -13,6 +13,8 @@ pub enum Error {
     MalformedUri,
     /// No handler was available to open the URI.
     NoHandler,
+    /// The URI was not opened because it must be called on the main UI thread.
+    NotMainThread,
     /// An unknown error occurred.
     ///
     /// Note that on certain platforms if a handler is not available this error
