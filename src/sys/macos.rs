@@ -18,16 +18,24 @@ impl<'a, 'b> Uri<'a, 'b> {
         }
     }
 
+    pub(crate) fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
     pub fn action(self, _: &'b str) -> Self {
         self
     }
 
-    pub fn open(self) -> Result<()> {
+    pub fn open<F>(self, on_completion: F) -> Result<()>
+    where 
+        F: Fn(bool) + 'static,
+    {
         let string = NSString::from_str(self.inner);
         let url = unsafe { NSURL::URLWithString(&string) }.ok_or(Error::MalformedUri)?;
         let workspace = unsafe { NSWorkspace::sharedWorkspace() };
 
         if unsafe { workspace.openURL(&url) } {
+            on_completion(true);
             Ok(())
         } else {
             Err(Error::Unknown)

@@ -5,7 +5,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     /// Could not acquire the android environment.
     ///
-    /// See the `android-env` crate for more details.
+    /// See the `robius-android-env` crate for more details.
     AndroidEnvironment,
     #[cfg(target_os = "android")]
     Java(jni::errors::Error),

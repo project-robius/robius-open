@@ -1,35 +1,53 @@
-//! A crate for opening URIs, e.g., URLs, `tel:`, `mailto:`, `file://`, etc.
-//!
-//! ```
-//! # use robius_open::Uri;
-//! Uri::new("tel:+61 123 456 789")
-//!     .open()
-//!     .expect("failed to open telephone URI");
-//! ```
+//! This crate provides easy Rust interfaces to open URIs across multiple platforms.
 //!
 //! Supports:
-//! - macOS (`NSWorkspace`)
-//! - Android (`android/content/Intent`)
-//! - Linux (`xdg-open`)
-//! - Windows (`start`)
-//! - iOS (`UIApplication`)
-//!
-//! # Android
-//! To use the library on Android, you must add the following to the app
-//! manifest:
+//! - macOS (via `NSWorkspace`)
+//! - Android (via `android/content/Intent`)
+//! - Linux (via `xdg-open`)
+//! - Windows (via `start`)
+//! - iOS (via `UIApplication`)
+//! 
+//! URIs take many different forms: URLs (`http://`), `tel:`, `mailto:`, `file://`,
+//! and more (see the [official list of schemes](https://www.iana.org/assignments/uri-schemes/uri-schemes.xhtml)).
+//! 
+//! ## Examples
+//! 
+//! ```rust
+//! use robius_open::Uri;
+//! Uri::new("tel:+61 123 456 789")
+//!    .open()
+//!    .expect("failed to open telephone URI");
+//! ```
+//! 
+//! ```rust
+//! use robius_open::Uri;
+//! Uri::new("http://www.google.com")
+//!    .open_with_completion(|success| {
+//!       log!("Opened URI? {success}");
+//!    })
+//!    .expect("failed to open URL");
+//! ```
+//! 
+//! 
+//! ## Android usage
+//! To use this crate on Android with the default `android-result` feature enabled,
+//! you must add the following to your app manifest:
 //! ```xml
 //! <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
-//!     tools:ignore="QueryAllPackagesPermission" />
-//!
+//!    tools:ignore="QueryAllPackagesPermission" />
+//! 
 //! <queries>
-//!     <intent>
-//!         <action android:name="android.intent.action.MAIN" />
-//!     </intent>
+//!    <intent>
+//!       <action android:name="android.intent.action.MAIN" />
+//!    </intent>
 //! </queries>
 //! ```
-//! or alternatively, disable the `android-result` feature. However, disabling
-//! this feature will make [`Uri::open`] always return `Ok`, regardless of
-//! whether the URI was successfully opened.
+//! 
+//! Alternatively, you can omit those permissions if you disable the `android-result` feature,
+//! but that will then cause `Uri::open()` to always return `Ok`
+//! (and the `on_completion` closure to always receive a success value of `true`)
+//! regardless of whether the URI was actually opened successfully.
+
 #![allow(clippy::result_unit_err)]
 
 mod error;
@@ -72,8 +90,44 @@ impl<'a, 'b> Uri<'a, 'b> {
         }
     }
 
-    /// Opens the URI.
+    /// Opens this URI.
+    ///
+    /// This must be called on the main UI thread, or it will return [Error::NotMainThread].
+    ///
+    /// Note that the returned `Result` does not necessarily indicate whether
+    /// the URI was successfully opened by the system.
+    /// For that purpose, you should use [`Self::open_with_completion()`].
     pub fn open(self) -> Result<()> {
-        self.inner.open()
+        self.open_with_completion(|_success| {
+            #[cfg(feature = "log")]
+            log::debug!("Called on_completion closure with success: {}", _success);
+        })
+    }
+
+    /// Opens this URI, with a callback for determining if the URI was successfully opened.
+    ///
+    /// This must be called on the main UI thread, or it will return [Error::NotMainThread].
+    ///
+    /// Note that the returned `Result` does not *necessarily* indicate whether
+    /// the URI was successfully opened by the system.
+    /// For that purpose, the given `on_completion` callback will be called
+    /// with a boolean indicating whether the URI was successfully opened.
+    /// Note that the callback may be not be called at all,
+    /// but should typically be called upon success.
+    ///
+    /// Thus, the URI was *not* successfully opened if this function returns an error,
+    /// **OR** if the `on_completion` callback is invoked with `false`.
+    pub fn open_with_completion<F>(self, on_completion: F) -> Result<()>
+    where 
+        F: Fn(bool) + 'static,
+    {
+        // Passing an empty URI can cause your app to be killed on certain platforms.
+        if self.inner.is_empty() {
+            #[cfg(feature = "log")]
+            log::error!("Error: cannot open an empty URI.");
+
+            return Err(Error::MalformedUri);
+        }
+        self.inner.open(on_completion)
     }
 }

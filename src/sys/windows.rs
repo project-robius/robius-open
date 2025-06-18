@@ -21,11 +21,18 @@ impl<'a, 'b> Uri<'a, 'b> {
         }
     }
 
+    pub(crate) fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
     pub fn action(self, _: &'b str) -> Self {
         self
     }
 
-    pub fn open(self) -> Result<()> {
+    pub fn open<F>(self, on_completion: F) -> Result<()>
+    where 
+        F: Fn(bool) + 'static,
+    {
         let win_uri = Foundation::Uri::CreateUri(&HSTRING::from(self.inner))
             .map_err(|_| Error::MalformedUri)?;
 
@@ -33,9 +40,16 @@ impl<'a, 'b> Uri<'a, 'b> {
             .map_err(|_| crate::Error::Unknown)?
             .get()
         {
-            Ok(true) => Ok(()),
-            Ok(false) => Err(Error::NoHandler),
-            Err(_) => Err(Error::Unknown)
+            Ok(success) => {
+                on_completion(success);
+                success.then_some(()).ok_or(Error::NoHandler)
+            }
+            Err(_e) => {
+                #[cfg(feature = "log")]
+                log::error!("Failed to open URI. Error: {_e}.");
+
+                Err(Error::Unknown)
+            }
         }
     }
 }

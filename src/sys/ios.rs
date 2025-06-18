@@ -20,32 +20,33 @@ impl<'a, 'b> Uri<'a, 'b> {
         }
     }
 
+    pub(crate) fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
     pub fn action(self, _: &'b str) -> Self {
         self
     }
 
-    pub fn open(self) -> Result<()> {
+    pub fn open<F>(self, on_completion: F) -> Result<()>
+    where
+        F: Fn(bool) + 'static,
+    {
+        let block = RcBlock::new(move |success: Bool| {
+            #[cfg(feature = "log")]
+            log::warn!("Calling on_completion closure with success: {}", success.as_raw());
+
+            on_completion(success.into());
+        });
+
         let string = NSString::from_str(self.inner);
-        let url = unsafe { NSURL::URLWithString(&string) }.ok_or(Error::MalformedUri)?;
+        let url = unsafe { NSURL::URLWithString(&string) }
+            .ok_or(Error::MalformedUri)?;
         let mtm = MainThreadMarker::new().ok_or(Error::NotMainThread)?;
         let application = UIApplication::sharedApplication(mtm);
 
-        let (tx, rx) = std::sync::mpsc::channel();
-        let block = RcBlock::new(move |success: Bool| {
-            // TODO: this closure block never fires.
-            #[cfg(feature = "log")]
-            log::error!("open completionHandler called with success: {}", success.as_raw());
-
-            // NOTE: We want to panic here as the main thread will hang waiting for a
-            // message on the channel.
-            tx.send(success).expect("failed to send open result");
-
-            #[cfg(feature = "log")]
-            log::error!("open completionHandler is done, sent tx.send(success) successfully");
-        });
-
         #[cfg(feature = "log")]
-        log::error!("Calling application.open()");
+        log::warn!("Calling application.openURL()");
 
         unsafe {
             application.openURL_options_completionHandler(
@@ -55,17 +56,7 @@ impl<'a, 'b> Uri<'a, 'b> {
             );
         }
         #[cfg(feature = "log")]
-        log::error!("After application.open(), waiting on rx.recv()");
-
-        // NOTE: try a timeout here on rx.recv() to avoid locking the thread entirely
-        //       if the completionHandler block never fires.
-
-        let res = match rx.recv() {
-            Ok(success) if success.is_true() => Ok(()),
-            _ => Err(Error::Unknown),
-        };
-        #[cfg(feature = "log")]
-        log::error!("After rx.recv(), got {res:?}");
-        res
+        log::warn!("After application.openURL(). Returning Ok(())");
+        Ok(())
     }
 }
