@@ -9,7 +9,7 @@ pub enum Error {
     AndroidEnvironment,
     #[cfg(target_os = "android")]
     Java(jni::errors::Error),
-    /// The provided URI was malformed.
+    /// The provided URI was malformed or otherwise invalid.
     MalformedUri,
     /// No handler was available to open the URI.
     NoHandler,

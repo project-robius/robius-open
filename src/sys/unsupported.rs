@@ -22,6 +22,8 @@ impl<'a, 'b> Uri<'a, 'b> {
     }
 
     pub fn open(self) -> Result<()> {
+        #[cfg(feature = "log")]
+        log::error!("Failed to open URI; this platform is unsupported.");
         Err(Error::Unknown)
     }
 }

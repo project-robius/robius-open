@@ -100,7 +100,7 @@ impl<'a, 'b> Uri<'a, 'b> {
     pub fn open(self) -> Result<()> {
         self.open_with_completion(|_success| {
             #[cfg(feature = "log")]
-            log::debug!("Called on_completion closure with success: {}", _success);
+            log::debug!("Uri::open(): called on_completion closure, success: {}", _success);
         })
     }
 
@@ -118,8 +118,8 @@ impl<'a, 'b> Uri<'a, 'b> {
     /// Thus, the URI was *not* successfully opened if this function returns an error,
     /// **OR** if the `on_completion` callback is invoked with `false`.
     pub fn open_with_completion<F>(self, on_completion: F) -> Result<()>
-    where 
-        F: Fn(bool) + 'static,
+    where
+        F: Fn(bool) + Send + 'static,
     {
         // Passing an empty URI can cause your app to be killed on certain platforms.
         if self.inner.is_empty() {

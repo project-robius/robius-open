@@ -24,7 +24,7 @@ impl<'a, 'b> Uri<'a, 'b> {
     }
 
     pub fn open<F>(self, on_completion: F) -> Result<()>
-    where 
+    where
         F: Fn(bool) + 'static,
     {
         let res = robius_android_env::with_activity(|env, current_activity| {

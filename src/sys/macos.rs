@@ -27,7 +27,7 @@ impl<'a, 'b> Uri<'a, 'b> {
     }
 
     pub fn open<F>(self, on_completion: F) -> Result<()>
-    where 
+    where
         F: Fn(bool) + 'static,
     {
         let string = NSString::from_str(self.inner);

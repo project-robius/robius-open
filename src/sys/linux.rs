@@ -24,14 +24,23 @@ impl<'a, 'b> Uri<'a, 'b> {
     }
 
     pub fn open<F>(self, on_completion: F) -> Result<()>
-    where 
+    where
         F: Fn(bool) + 'static,
     {
-        if let Ok(status) = Command::new("xdg-open").arg(self.inner).status() {
-            let success = status.success();
-            on_completion(success);
-            if success {
-                return Ok(());
+        match Command::new("xdg-open").arg(self.inner).status() {
+            Ok(status) => {
+                let success = status.success();
+                on_completion(success);
+                if success {
+                    return Ok(());
+                } else {
+                    #[cfg(feature = "log")]
+                    log::error!("Failed to open URI, `xdg-open` command returned {status}");
+                }
+            }
+            Err(_e) => {
+                #[cfg(feature = "log")]
+                log::error!("Failed to open URI via `xdg-open`; error: {_e}");
             }
         }
         Err(Error::Unknown)

@@ -30,16 +30,18 @@ impl<'a, 'b> Uri<'a, 'b> {
     }
 
     pub fn open<F>(self, on_completion: F) -> Result<()>
-    where 
+    where
         F: Fn(bool) + 'static,
     {
         let win_uri = Foundation::Uri::CreateUri(&HSTRING::from(self.inner))
             .map_err(|_| Error::MalformedUri)?;
 
-        match Launcher::LaunchUriAsync(&win_uri)
-            .map_err(|_| crate::Error::Unknown)?
-            .get()
-        {
+        let async_iop = Launcher::LaunchUriAsync(&win_uri).map_err(|_e| {
+            #[cfg(feature = "log")]
+            log::error!("Failed to call LaunchUriAsync; error: {_e}.");
+            crate::Error::Unknown
+        })?;
+        match async_iop.get() {
             Ok(success) => {
                 on_completion(success);
                 success.then_some(()).ok_or(Error::NoHandler)
@@ -47,7 +49,6 @@ impl<'a, 'b> Uri<'a, 'b> {
             Err(_e) => {
                 #[cfg(feature = "log")]
                 log::error!("Failed to open URI. Error: {_e}.");
-
                 Err(Error::Unknown)
             }
         }
