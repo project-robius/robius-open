@@ -1,15 +1,9 @@
 use std::marker::PhantomData;
 
-use icrate::{
-    block2::{Block, ConcreteBlock},
-    Foundation::{NSDictionary, NSString, NSURL},
-};
-use objc2::{
-    extern_class, extern_methods, mutability,
-    rc::Id,
-    runtime::{AnyObject, Bool, NSObject},
-    ClassType,
-};
+use block2::RcBlock;
+use objc2_foundation::{NSDictionary, NSString, NSURL};
+use objc2::{MainThreadMarker, runtime::Bool};
+use objc2_ui_kit::UIApplication;
 
 use crate::{Error, Result};
 
@@ -26,68 +20,43 @@ impl<'a, 'b> Uri<'a, 'b> {
         }
     }
 
+    pub(crate) fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
     pub fn action(self, _: &'b str) -> Self {
         self
     }
 
-    pub fn open(self) -> Result<()> {
+    pub fn open<F>(self, on_completion: F) -> Result<()>
+    where
+        F: Fn(bool) + 'static,
+    {
+        let block = RcBlock::new(move |success: Bool| {
+            #[cfg(feature = "log")]
+            log::warn!("Calling on_completion closure with success: {}", success.as_raw());
+
+            on_completion(success.into());
+        });
+
         let string = NSString::from_str(self.inner);
-        let url = unsafe { NSURL::URLWithString(&string) }.ok_or(Error::MalformedUri)?;
+        let url = unsafe { NSURL::URLWithString(&string) }
+            .ok_or(Error::MalformedUri)?;
+        let mtm = MainThreadMarker::new().ok_or(Error::NotMainThread)?;
+        let application = UIApplication::sharedApplication(mtm);
 
-        let application = unsafe { UIApplication::shared() };
-        let (tx, rx) = std::sync::mpsc::channel();
-        let block = ConcreteBlock::new(move |success| {
-            // NOTE: We want to panic here as the main thread will hang waiting for a
-            // message on the channel.
-            tx.send(success).expect("failed to send open result");
-        })
-        .copy();
+        #[cfg(feature = "log")]
+        log::warn!("Calling application.openURL()");
 
-        application.open(&url, &NSDictionary::new(), &block);
-
-        match rx.recv() {
-            Ok(success) if success.is_true() => Ok(()),
-            _ => Err(Error::Unknown),
+        unsafe {
+            application.openURL_options_completionHandler(
+                &url,
+                &NSDictionary::new(), // no options used currently.
+                Some(&block),
+            );
         }
+        #[cfg(feature = "log")]
+        log::warn!("After application.openURL(). Returning Ok(())");
+        Ok(())
     }
 }
-
-extern_class!(
-    struct UIResponder;
-
-    unsafe impl ClassType for UIResponder {
-        type Super = NSObject;
-        // TODO: Can this be relaxed?
-        type Mutability = mutability::InteriorMutable;
-    }
-);
-
-extern_class!(
-    struct UIApplication;
-
-    unsafe impl ClassType for UIApplication {
-        type Super = UIResponder;
-        // TODO: Can this be relaxed?
-        type Mutability = mutability::InteriorMutable;
-    }
-);
-
-extern_methods!(
-    unsafe impl UIApplication {
-        #[method_id(sharedApplication)]
-        pub unsafe fn shared() -> Id<UIApplication>;
-
-        #[method(canOpenURL:)]
-        fn can_open(&self, url: &NSURL) -> bool;
-
-        #[method(openURL:options:completionHandler:)]
-        fn open(
-            &self,
-            url: &NSURL,
-            // TODO?
-            options: &NSDictionary<NSString, AnyObject>,
-            // TODO?
-            completion_handler: &Block<(Bool,), ()>,
-        );
-    }
-);

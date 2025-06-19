@@ -5,7 +5,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     /// Could not acquire the android environment.
     ///
-    /// See the `android-env` crate for more details.
+    /// See the `robius-android-env` crate for more details.
     AndroidEnvironment,
     #[cfg(target_os = "android")]
     Java(jni::errors::Error),
@@ -13,6 +13,8 @@ pub enum Error {
     MalformedUri,
     /// No handler was available to open the URI.
     NoHandler,
+    /// The URI was not opened because it must be called on the main UI thread.
+    NotMainThread,
     /// An unknown error occurred.
     ///
     /// Note that on certain platforms if a handler is not available this error

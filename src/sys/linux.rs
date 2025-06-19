@@ -15,13 +15,22 @@ impl<'a, 'b> Uri<'a, 'b> {
         }
     }
 
+    pub(crate) fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
     pub fn action(self, _: &'b str) -> Self {
         self
     }
 
-    pub fn open(self) -> Result<()> {
+    pub fn open<F>(self, on_completion: F) -> Result<()>
+    where 
+        F: Fn(bool) + 'static,
+    {
         if let Ok(status) = Command::new("xdg-open").arg(self.inner).status() {
-            if status.success() {
+            let success = status.success();
+            on_completion(success);
+            if success {
                 return Ok(());
             }
         }

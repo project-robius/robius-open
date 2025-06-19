@@ -13,6 +13,10 @@ impl<'a, 'b> Uri<'a, 'b> {
         }
     }
 
+    pub(crate) fn is_empty(&self) -> bool {
+        false
+    }
+
     pub fn action(self, _: &'b str) -> Self {
         self
     }

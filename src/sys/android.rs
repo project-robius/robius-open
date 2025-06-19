@@ -15,11 +15,18 @@ impl<'a, 'b> Uri<'a, 'b> {
         }
     }
 
+    pub(crate) fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
     pub(crate) fn action(self, action: &'b str) -> Self {
         Self { action, ..self }
     }
 
-    pub(crate) fn open(self) -> Result<()> {
+    pub fn open<F>(self, on_completion: F) -> Result<()>
+    where 
+        F: Fn(bool) + 'static,
+    {
         let res = robius_android_env::with_activity(|env, current_activity| {
             let action = env
                 .get_static_field("android/content/Intent", self.action, "Ljava/lang/String;")?
@@ -84,7 +91,10 @@ impl<'a, 'b> Uri<'a, 'b> {
         });
 
         match res {
-            Ok(Ok(())) => Ok(()),
+            Ok(Ok(())) => {
+                on_completion(true);
+                Ok(())
+            }
             Ok(Err(e)) => {
                 #[cfg(feature = "log")]
                 log::error!(
