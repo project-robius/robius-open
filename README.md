@@ -1,3 +1,5 @@
+# Archived: this has moved to https://github.com/project-robius/robius
+
 # `robius-open`
 
 [![Latest Version](https://img.shields.io/crates/v/robius-open.svg)](https://crates.io/crates/robius-open)
